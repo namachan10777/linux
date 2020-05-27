@@ -1003,7 +1003,7 @@ asmlinkage long sys_pidfd_send_signal(int pidfd, int sig,
 				       siginfo_t __user *info,
 				       unsigned int flags);
 asmlinkage long sys_pidfd_getfd(int pidfd, int fd, unsigned int flags);
-
+asmlinkage long sys_caesar_encrypt(unsigned int shift, char __user *buf, size_t count);
 /*
  * Architecture-specific system calls
  */
