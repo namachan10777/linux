@@ -216,6 +216,8 @@ source "drivers/hwtracing/Kconfig"
 
 source "drivers/fpga/Kconfig"
 
+source "drivers/lambda/Kconfig"
+
 source "drivers/fsi/Kconfig"
 
 source "drivers/tee/Kconfig"
