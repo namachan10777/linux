@@ -3,7 +3,7 @@
 # FPGA framework configuration
 #
 
-menuconfig Lambda
+menuconfig LAMBDA
 	tristate "Lambda calc"
 	help
 	  Say Y!
