@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# FPGA framework configuration
+#
+
+menuconfig UNRANDOM
+	tristate "Unrandom seed"
+	help
+	  unrandom seed generator
