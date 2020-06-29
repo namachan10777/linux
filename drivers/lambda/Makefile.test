@@ -1,0 +1,10 @@
+CFLAGS := -std=c89
+
+json.o: json.c json.h
+	gcc $(CFLAGS) -c json.c
+
+test.exe: json.o json.h
+	gcc $(CFLAGS) test.c json.o -o text.exe
+
+.PHONY: test
+test: test.exe
