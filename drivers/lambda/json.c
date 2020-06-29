@@ -13,6 +13,10 @@ int is_white(char c) {
 	return c != ' ' && c != '\t' && c != '\n' && c != '\r';
 }
 
+int is_digit(char c) {
+	return c >= '0' && c <= '9';
+}
+
 ParseResult parse_impl(int begin, int end, const char *input) {
 	ParseResult result;
 	while(input[begin] == is_white(input[begin])) ++begin;
@@ -48,6 +52,29 @@ ParseResult parse_impl(int begin, int end, const char *input) {
 			}
 		}
 	}
+	else if (input[begin] == '-' || is_digit(input[begin])) {
+		int sign = 1;
+		int base=0;
+		if (input[begin] == '-') {
+			sign = -1;
+			begin++;
+		}
+		int i=begin, j;
+		while (i < end && is_digit(input[i])) {
+			base *= 10;
+			base += input[i++] - '0';
+		}
+		for (j=i+1;j<end;++j) {
+			if (!is_white(input[begin]))
+				return gen_error(j);
+		}
+		result.type = SUCCESS;
+		struct JsonValue value;
+		value.integer = base * sign;
+		value.type = INTEGER;
+		result.value = value;
+		return result;
+	}
 	return gen_error(begin);
 }
 
@@ -57,7 +84,7 @@ ParseResult parse(const char *input) {
 	return parse_impl(0, len, input);
 }
 
-int stringify(char *buf, int buf_size, JSONValue json) {
+int stringify_impl(char *buf, int buf_size, JSONValue json) {
 	if (json.type == STRING) {
 		if (buf_size < json.string.len + 3) return -1;
 		buf[0] = '\"';
@@ -66,9 +93,35 @@ int stringify(char *buf, int buf_size, JSONValue json) {
 			buf[i] = json.string.buf[i+1];
 		}
 		buf[json.string.len+1] = '\"';
-		buf[json.string.len+2] = '\0';
+		return json.string.len+2;
+	}
+	else if (json.type == INTEGER) {
+		int i=0;
+		int base = 1;
+		int abs = json.integer > 0 ? json.integer : -json.integer;
+		if (i >= buf_size-1) return -1;
+		if (json.integer < 0)
+			buf[i++] = '-';
+		char tmp[1024];
+		int j=0, k;
+		while(abs / base > 0) {
+			tmp[j++] = (abs / base) % 10 + '0';
+			if (j+i >= buf_size) return -1;
+			base *= 10;
+		}
+		for(k=0;k<j;++k) {
+			buf[i+k] = tmp[j-k-1];
+		}
+		return j+i;
 	}
 	else {
-		buf[0] = '\0';
+		return 0;
+	}
+}
+
+void stringify(char *buf, int buf_size, JSONValue json) {
+	int len = stringify_impl(buf, buf_size-1, json);
+	if (len >= 0) {
+		buf[len] = '\0';
 	}
 }

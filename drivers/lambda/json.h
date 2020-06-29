@@ -41,4 +41,4 @@ typedef struct {
 } ParseResult;
 
 ParseResult parse(const char *input);
-int stringify(char *buf, int buf_size, JSONValue json);
+void stringify(char *buf, int buf_size, JSONValue json);
