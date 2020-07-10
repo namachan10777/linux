@@ -52,7 +52,7 @@ ParseResult parse_impl(int begin, int end, const char *input) {
 			}
 		}
 	}
-	else if (input[begin] == '-' || is_digit(input[begin])) {
+	if (input[begin] == '-' || is_digit(input[begin])) {
 		int sign = 1;
 		int base=0;
 		if (input[begin] == '-') {
@@ -72,6 +72,36 @@ ParseResult parse_impl(int begin, int end, const char *input) {
 		struct JsonValue value;
 		value.integer = base * sign;
 		value.type = INTEGER;
+		result.value = value;
+		return result;
+	}
+	int is_true = 1;
+	char true_str[] = "true";
+	if ((end-begin) >= 4) {
+		int i;
+		for (i = 0; i < 4; ++i) {
+			is_true &= true_str[i] == input[begin+i];
+		}
+		for (i = 4; i < (end-begin); ++i) {
+			is_true &= is_white(input[begin+i]);
+		}
+	}
+	int is_false = 1;
+	char false_str[] = "false";
+	if ((end-begin) >= 5) {
+		int i;
+		for (i = 0; i < 5; ++i) {
+			is_true &= false_str[i] == input[begin+i];
+		}
+		for (i = 5; i < (end-begin); ++i) {
+			is_true &= is_white(input[begin+i]);
+		}
+	}
+	if (is_true || is_false) {
+		result.type = SUCCESS;
+		struct JsonValue value;
+		value.type = BOOLEAN;
+		value.boolean = is_true;
 		result.value = value;
 		return result;
 	}
@@ -113,6 +143,26 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 			buf[i+k] = tmp[j-k-1];
 		}
 		return j+i;
+	}
+	else if (json.type == BOOLEAN) {
+		if (json.boolean) {
+			char src[] = "true";
+			if (buf_size < sizeof(src)) return -1;
+			int i;
+			for (i = 0; i < sizeof(src); ++i) {
+				buf[i] = src[i];
+			}
+			return sizeof(src);
+		}
+		else {
+			char src[] = "false";
+			if (buf_size < sizeof(src)) return -1;
+			int i;
+			for (i = 0; i < sizeof(src); ++i) {
+				buf[i] = src[i];
+			}
+			return sizeof(src);
+		}
 	}
 	else {
 		return 0;

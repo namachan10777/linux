@@ -1,6 +1,7 @@
 typedef enum {
 	STRING,
 	INTEGER,
+	BOOLEAN,
 	OBJECT,
 	ARRAY
 } JSONType;
@@ -22,6 +23,7 @@ struct JsonValue {
 	union {
 		struct String string;
 		int integer;
+		int boolean;
 		Pair *keyvalue;
 		JSONValue *arrary;
 	};
