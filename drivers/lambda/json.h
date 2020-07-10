@@ -36,6 +36,7 @@ typedef enum {
 
 typedef struct {
 	ParseResultType type;
+	int used;
 	union {
 		int pos;
 		struct JsonValue value;
