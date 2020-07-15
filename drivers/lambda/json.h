@@ -18,6 +18,11 @@ struct String {
 	int len;
 };
 
+typedef struct {
+	int len;
+	struct JsonValue *arr;
+} Array;
+
 struct JsonValue {
 	JSONType type;
 	union {
@@ -25,7 +30,7 @@ struct JsonValue {
 		int integer;
 		int boolean;
 		Pair *keyvalue;
-		JSONValue *arrary;
+		Array arrary;
 	};
 };
 

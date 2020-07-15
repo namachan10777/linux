@@ -33,4 +33,20 @@ int main() {
 	if (result.used != 5) return -1;
 	stringify(buf, sizeof(buf), result.value);
 	printf("stringified: %s\n", buf);
+
+	char src5[] = "[]";
+	result = parse(src5);
+	if (result.type != SUCCESS) return -1;
+	if (result.used != 2) return -1;
+	stringify(buf, sizeof(buf), result.value);
+	printf("stringified: %s\n", buf);
+
+	char src6[] = "[1,2,3]";
+	result = parse(src6);
+	if (result.type != SUCCESS) return -1;
+	if (result.used != 7) {
+		return -1;
+	}
+	stringify(buf, sizeof(buf), result.value);
+	printf("stringified: %s\n", buf);
 }

@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+struct List {
+	struct JsonValue json;
+	struct List *next;
+};
+
 ParseResult gen_error(int pos) {
 	ParseResult result;
 	result.type = ERROR;
@@ -10,7 +15,7 @@ ParseResult gen_error(int pos) {
 }
 
 int is_white(char c) {
-	return c != ' ' && c != '\t' && c != '\n' && c != '\r';
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
 int is_digit(char c) {
@@ -20,7 +25,7 @@ int is_digit(char c) {
 ParseResult parse_impl(int count, const char *input) {
 	int origin = (int)input;
 	ParseResult result;
-	while(*input == is_white(*input) || count <= 0) {
+	while(is_white(*input) || count <= 0) {
 		++input;
 		--count;
 	}
@@ -54,9 +59,11 @@ ParseResult parse_impl(int count, const char *input) {
 	if (*input == '-' || is_digit(*input)) {
 		int sign = 1;
 		int base=0;
+		if (count < 1) return gen_error((int)input);
 		if (*input == '-') {
 			sign = -1;
 			input++;
+			count--;
 		}
 		int i=0, j;
 		while (i < count && is_digit(input[i])) {
@@ -69,6 +76,73 @@ ParseResult parse_impl(int count, const char *input) {
 		value.type = INTEGER;
 		result.value = value;
 		result.used = i + (int)input - origin;
+		return result;
+	}
+	if (*input == '[') {
+		++input; --count;
+		if (count <= 0) gen_error((int)input);
+		while (is_white(*input)) {
+			if (count < 0) gen_error((int)input);
+			++input; --count;
+		}
+		if (count <= 0) gen_error((int)input);
+		if (*input == ']') {
+			result.type = SUCCESS;
+			result.used = (int)input - (int)origin + 1;
+			result.value.type = ARRAY;
+			result.value.arrary.len = 0;
+			result.value.arrary.arr = NULL;
+			return result;
+		}
+		int len = 0;
+		struct List *list = NULL;
+
+		for (;;) {
+			ParseResult result = parse_impl(count, input);
+			if (result.type == ERROR) {
+				result.type = ERROR;
+				result.pos = (int)input;
+				return result;
+			}
+			input += result.used;
+			count -= result.used;
+			struct List *next = malloc(sizeof(struct List));
+			next->next = list;
+			next->json = result.value;
+			list = next;
+
+			if (count <= 1) gen_error((int)input);
+			while (is_white(*input)) {
+				if (count <= 1) gen_error((int)input);
+				++input; --count;
+			}
+
+			if (*input == ',') {
+				if (count <= 1) gen_error((int)input);
+				++input; --count;
+			}
+			else if (*input == ']') {
+				if (count <= 1) gen_error((int)input);
+				break;
+			}
+		}
+		struct List *l1 = list;
+		int cnt = 0;
+		while(l1 != NULL) {
+			++cnt;
+			l1 = l1->next;
+		}
+		struct JsonValue *arr = malloc(sizeof(struct JsonValue) * cnt);
+		int idx = cnt;
+		while(list != NULL) {
+			arr[--idx] = list->json;
+			list = list->next;
+		}
+		result.type = SUCCESS;
+		result.used = (int)input - origin + 1;
+		result.value.type = ARRAY;
+		result.value.arrary.arr = arr;
+		result.value.arrary.len = cnt;
 		return result;
 	}
 	int is_true = 1;
@@ -138,6 +212,25 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 			buf[i+k] = tmp[j-k-1];
 		}
 		return j+i;
+	}
+	else if (json.type == ARRAY) {
+		if (buf_size < 1) return -1;
+		buf[0] = '[';
+		int offset = 1;
+		for (int i=0; i<json.arrary.len; ++i) {
+			if (buf_size - offset < 1) return -1;;
+			int s = stringify_impl(buf + offset, buf_size-1, json.arrary.arr[i]);
+			if (s == -1) return -1;
+			offset += s;
+			if (i < json.arrary.len-1) {
+				if (buf_size - offset < 3) return -1;;
+				buf[offset++] = ',';
+				buf[offset++] = ' ';
+			}
+		}
+		if (buf_size - offset < 1) return -1;
+		buf[offset++] = ']';
+		return offset;
 	}
 	else if (json.type == BOOLEAN) {
 		if (json.boolean) {
