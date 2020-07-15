@@ -7,11 +7,7 @@ typedef enum {
 } JSONType;
 
 typedef struct JsonValue JSONValue;
-
-typedef struct {
-	char* key;
-	JSONValue *value;
-} Pair;
+typedef struct Pair PAIR;
 
 struct String {
 	char *buf;
@@ -23,15 +19,25 @@ typedef struct {
 	struct JsonValue *arr;
 } Array;
 
+struct Pairs {
+	int len;
+	struct Pair *pairs;
+};
+
 struct JsonValue {
 	JSONType type;
 	union {
 		struct String string;
 		int integer;
 		int boolean;
-		Pair *keyvalue;
+		struct Pairs pairs;
 		Array arrary;
 	};
+};
+
+struct Pair {
+	struct String key;
+	struct JsonValue value;
 };
 
 typedef enum {

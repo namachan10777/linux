@@ -4,10 +4,10 @@
 int main() {
 	char buf[1024];
 	ParseResult result;
-	char src[] = "\"string \\\"hoge\\\"\"";
+	char src[] = " \"string \\\"hoge\\\"\"";
 	result = parse(src);
 	if (result.type != SUCCESS) return -1;
-	if (result.used != 16) return -1;
+	if (result.used != 18) return -1;
 	stringify(buf, sizeof(buf), result.value);
 	printf("stringified: %s\n", buf);
 
@@ -45,6 +45,15 @@ int main() {
 	result = parse(src6);
 	if (result.type != SUCCESS) return -1;
 	if (result.used != 7) {
+		return -1;
+	}
+	stringify(buf, sizeof(buf), result.value);
+	printf("stringified: %s\n", buf);
+
+	char src7[] = "{\"hoge\": 1, \"foo\": 2}";
+	result = parse(src7);
+	if (result.type != SUCCESS) return -1;
+	if (result.used != 21) {
 		return -1;
 	}
 	stringify(buf, sizeof(buf), result.value);
