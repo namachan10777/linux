@@ -78,9 +78,6 @@ ParseResult parse_impl(int count, const char *input) {
 		for (i = 0; i < 4; ++i) {
 			is_true &= true_str[i] == input[i];
 		}
-		for (i = 4; i < count; ++i) {
-			is_true &= is_white(input[i]);
-		}
 	}
 	int is_false = 1;
 	char false_str[] = "false";
@@ -88,9 +85,6 @@ ParseResult parse_impl(int count, const char *input) {
 		int i;
 		for (i = 0; i < 5; ++i) {
 			is_true &= false_str[i] == input[i];
-		}
-		for (i = 5; i < count; ++i) {
-			is_true &= is_white(input[i]);
 		}
 	}
 	if (is_true || is_false) {
