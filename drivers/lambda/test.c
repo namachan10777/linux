@@ -1,4 +1,5 @@
 #include "json.h"
+#include "eval.h"
 #include <stdio.h>
 
 int main() {
@@ -58,4 +59,12 @@ int main() {
 	}
 	stringify(buf, sizeof(buf), result.value);
 	printf("stringified: %s\n", buf);
+
+	char src8[] = "{\"type\": \"op\", \"op\": \"+\", \"lhr\": 1, \"rhr\": 2}";
+	result = parse(src8);
+	if (result.type != SUCCESS) return -1;
+	struct JsonValue out;
+	if (!eval(&out, result.value)) return -1;
+	stringify(buf, sizeof(buf), out);
+	printf("stringified: %s;\n", buf);
 }
