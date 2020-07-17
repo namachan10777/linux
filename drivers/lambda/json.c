@@ -329,12 +329,7 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 		int offset = 1;
 		int i, j;
 		for (i=0; i<json.pairs.len; ++i) {
-			for (int k=0; k<json.pairs.pairs[i].key.len; ++k) {
-				printf("%c", json.pairs.pairs[i].key.buf[k]);
-			}
-			printf("\n");
 			int key_size = json.pairs.pairs[i].key.len + 2;
-			printf("key_size: %d\n", key_size);
 			buf[offset] = '"';
 			for (j=0; j<json.pairs.pairs[i].key.len; ++j) {
 				buf[++offset] = json.pairs.pairs[i].key.buf[j];
@@ -343,9 +338,7 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 			buf[++offset] = '"';
 			buf[++offset] = ':';
 			++offset;
-			printf("offset %d\n", offset);
 			int s = stringify_impl(buf + offset, buf_size-offset, json.pairs.pairs[i].value);
-			printf("s %d", s);
 			if (s == -1) return -1;
 			offset += s;
 			if (i < json.arrary.len-1) {
@@ -387,8 +380,5 @@ void stringify(char *buf, int buf_size, JSONValue json) {
 	int len = stringify_impl(buf, buf_size-1, json);
 	if (len >= 0) {
 		buf[len] = '\0';
-	}
-	else {
-		printf("overflow\n");
 	}
 }
