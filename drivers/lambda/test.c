@@ -1,70 +1,116 @@
+#define USER_LAND
 #include "json.h"
 #include "eval.h"
 #include <stdio.h>
+#include <string.h>
+
+#define ASSERT(cond) if (!(cond)) { printf("assersion failure: %s\n", #cond);  return -1; }
 
 int main() {
 	char buf[1024];
 	ParseResult result;
-	char src[] = " \"string \\\"hoge\\\"\"";
-	result = parse(src);
-	if (result.type != SUCCESS) return -1;
-	if (result.used != 18) return -1;
-	stringify(buf, sizeof(buf), result.value);
-	printf("stringified: %s\n", buf);
 
-	char src2[] = "-123";
-	result = parse(src2);
-	if (result.type != SUCCESS) return -1;
-	printf("%d\n", result.used);
-	if (result.used != 4) return -1;
-	stringify(buf, sizeof(buf), result.value);
-	stringify(buf, sizeof(buf), result.value);
-	printf("stringified: %s\n", buf);
 
-	char src3[] = "true";
-	result = parse(src3);
-	if (result.type != SUCCESS) return -1;
-	if (result.used != 4) return -1;
-	stringify(buf, sizeof(buf), result.value);
-	printf("stringified: %s\n", buf);
+	char src1[] = " \"string \\\"hoge\\\"\"";
+	result = parse(src1, sizeof(src1));
+	ASSERT(result.type == SUCCESS);
+	ASSERT(result.used == sizeof(src1)-1);
+	ASSERT(result.value.type == STRING);
+	ASSERT(stringify(buf, sizeof(buf), result.value) == sizeof(src1)-1);
+	ASSERT(strcmp(buf, "\"string \\\"hoge\\\"\"") == 0);
 
-	char src4[] = "false";
-	result = parse(src4);
-	if (result.type != SUCCESS) return -1;
-	if (result.used != 5) return -1;
-	stringify(buf, sizeof(buf), result.value);
-	printf("stringified: %s\n", buf);
+	char src2[] = "\"hog";
+	result = parse(src2, sizeof(src2));
+	ASSERT(result.type == ERROR);
 
-	char src5[] = "[]";
-	result = parse(src5);
-	if (result.type != SUCCESS) return -1;
-	if (result.used != 2) return -1;
-	stringify(buf, sizeof(buf), result.value);
-	printf("stringified: %s\n", buf);
+	char src3[] = "\"hog\\";
+	result = parse(src3, sizeof(src3));
+	ASSERT(result.type == ERROR);
 
-	char src6[] = "[1,2,3]";
-	result = parse(src6);
-	if (result.type != SUCCESS) return -1;
-	if (result.used != 7) {
-		return -1;
-	}
-	stringify(buf, sizeof(buf), result.value);
-	printf("stringified: %s\n", buf);
+	char src4[] = " 123 ";
+	result = parse(src4, sizeof(src4));
+	ASSERT(result.value.type == INTEGER);
+	ASSERT(result.type == SUCCESS);
+	ASSERT(result.used == 4);
+	ASSERT(result.value.integer == 123);
+	ASSERT(stringify(buf, sizeof(buf), result.value) == 4);
+	ASSERT(strcmp(buf, "123") == 0);
 
-	char src7[] = "{\"hoge\": 1, \"foo\": 2}";
-	result = parse(src7);
-	if (result.type != SUCCESS) return -1;
-	if (result.used != 21) {
-		return -1;
-	}
-	stringify(buf, sizeof(buf), result.value);
-	printf("stringified: %s\n", buf);
+	char src5[] = " -123 ";
+	result = parse(src5, sizeof(src5));
+	ASSERT(result.value.type == INTEGER);
+	ASSERT(result.type == SUCCESS);
+	ASSERT(result.used == 5);
+	ASSERT(result.value.integer == -123)
+	ASSERT(stringify(buf, sizeof(buf), result.value) == 5);
+	ASSERT(strcmp(buf, "-123") == 0);
 
-	char src8[] = "{\"type\": \"op\", \"op\": \"+\", \"lhr\": 1, \"rhr\": 2}";
-	result = parse(src8);
-	if (result.type != SUCCESS) return -1;
-	struct JsonValue out;
-	if (!eval(&out, result.value)) return -1;
-	stringify(buf, sizeof(buf), out);
-	printf("stringified: %s;\n", buf);
+
+	char src6[] = " -";
+	result = parse(src6, sizeof(src6));
+	ASSERT(result.type == ERROR);
+
+	char src7[] = "false";
+	result = parse(src7, sizeof(src7));
+	ASSERT(result.value.type == BOOLEAN);
+	ASSERT(result.type == SUCCESS);
+	ASSERT(result.used == 5);
+	ASSERT(result.value.boolean == 0);
+	ASSERT(stringify(buf, sizeof(buf), result.value) == 6);
+	ASSERT(strcmp(buf, "false") == 0);
+
+	char src8[] = "true";
+	result = parse(src8, sizeof(src8));
+	ASSERT(result.value.type == BOOLEAN);
+	ASSERT(result.type == SUCCESS);
+	ASSERT(result.used == 4);
+	ASSERT(result.value.boolean == 1);
+	ASSERT(stringify(buf, sizeof(buf), result.value) == 5);
+	ASSERT(strcmp(buf, "true") == 0);
+
+	char src9[] = "[]";
+	result = parse(src9, sizeof(src9));
+	ASSERT(result.type == SUCCESS);
+	ASSERT(result.value.type == ARRAY);
+	ASSERT(result.used == 2);
+	ASSERT(result.value.arrary.len == 0);
+	ASSERT(stringify(buf, sizeof(buf), result.value) == 3);
+	ASSERT(strcmp(buf, "[]") == 0);
+
+	char src10[] = " [\"hoge\" ] ";
+	result = parse(src10, sizeof(src10));
+	ASSERT(result.type == SUCCESS);
+	ASSERT(result.value.type == ARRAY);
+	ASSERT(result.used == 10);
+	ASSERT(result.value.arrary.len == 1);
+	ASSERT(result.value.arrary.arr[0].type == STRING);
+	ASSERT(stringify(buf, sizeof(buf), result.value) == 9);
+	ASSERT(strcmp(buf, "[\"hoge\"]") == 0);
+
+	char src11[] = "[1, 2, 3 ]";
+	result = parse(src11, sizeof(src11));
+	ASSERT(result.type == SUCCESS);
+	ASSERT(result.value.type == ARRAY);
+	ASSERT(result.used == 10);
+	ASSERT(result.value.arrary.len == 3);
+	ASSERT(stringify(buf, sizeof(buf), result.value) == 8);
+	ASSERT(strcmp(buf, "[1,2,3]") == 0);
+
+	char src12[] = "{\"hoge\": 1}";
+	result = parse(src12, sizeof(src12));
+	ASSERT(result.type == SUCCESS);
+	ASSERT(result.value.type == OBJECT);
+	ASSERT(result.used == 11);
+	ASSERT(result.value.pairs.len == 1);
+	ASSERT(stringify(buf, sizeof(buf), result.value) == 11);
+	ASSERT(strcmp(buf, "{\"hoge\":1}") == 0);
+
+	char src13[] = "{\"hoge\": [1,2,3],\"foo\":{\"bar\": 1}}";
+	result = parse(src13, sizeof(src13));
+	ASSERT(result.type == SUCCESS);
+	ASSERT(result.value.type == OBJECT);
+	ASSERT(result.used == 34);
+	ASSERT(result.value.pairs.len == 2);
+	ASSERT(stringify(buf, sizeof(buf), result.value) == 33);
+	ASSERT(strcmp(buf, "{\"hoge\":[1,2,3],\"foo\":{\"bar\":1}}") == 0);
 }
