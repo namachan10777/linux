@@ -1,5 +1,6 @@
 #include "json.h"
 #include <linux/slab.h>
+#include <linux/module.h>
 
 struct List {
 	struct JsonValue json;
@@ -267,11 +268,9 @@ ParseResult parse_impl(int count, const char *input) {
 	return gen_error((long long)input);
 }
 
-ParseResult parse(const char *input) {
-	int len=0;
+ParseResult parse(const char *input, int count) {
 	ParseResult result;
-	while(input[len] != '\0') ++len;
-	result = parse_impl(len, input);
+	result = parse_impl(count, input);
 	if (result.type == ERROR) {
 		result.pos -= (long long)input;
 	}
@@ -382,9 +381,12 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 	}
 }
 
-void stringify(char *buf, int buf_size, JSONValue json) {
+int stringify(char *buf, int buf_size, JSONValue json) {
 	int len = stringify_impl(buf, buf_size-1, json);
 	if (len >= 0) {
 		buf[len] = '\0';
 	}
+	return len+1;
 }
+
+MODULE_LICENSE("GPL");

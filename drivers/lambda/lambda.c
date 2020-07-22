@@ -11,48 +11,53 @@ char srcbuf[1024];
 size_t len;
 
 struct runtime_info_t {
-	char *srcbuf;
-	char *outbuf;
-	ssize_t out_size;
+	int tag;
+	struct JsonValue json;
 };
 
 static int lambda_open(struct inode *inode, struct file *file) {
-	char *srcbuf = kmalloc(sizeof(char) * 1024, GFP_KERNEL);
-	char *outbuf = kmalloc(sizeof(char) * 1024, GFP_KERNEL);
 	struct runtime_info_t *info = kmalloc(sizeof(struct runtime_info_t), GFP_KERNEL);
-	info->srcbuf = srcbuf;
-	info->outbuf = outbuf;
-	info->out_size = 0;
+	info->tag = 0;
+	printk("lambda open\n");
 	file->private_data = (void*)info;
 	return 0;
 }
 
 static int lambda_release(struct inode *inode, struct file *file) {
+	printk("lambda close\n");
 	return 0;
 }
 
 static ssize_t lambda_write(struct file *file, const char __user *buf, size_t count , loff_t *f_pos) {
-	size_t i;
 	struct runtime_info_t *info = file->private_data;
+	ParseResult result;
+	printk("lambda write\n");
 	if (!access_ok(buf, count)) {
 		return 0;
 	}
-	for (i=0; i<count; ++i) {
-		info->srcbuf[i] = buf[i];
+	printk("parse start %s %d\n", buf, count);
+	result = parse(buf, count);
+	if (result.type != SUCCESS) {
+		printk("syntax error");
+		return 0;
 	}
+	printk("parse success %d\n", result.value.type);
+	info->json = result.value;
+	info->tag = 42;
 	return count;
 }
 
 static ssize_t lambda_read(struct file *file, char __user *buf, size_t count, loff_t *f_pos) {
-	size_t i;
 	struct runtime_info_t *info = file->private_data;
+	long long len;
+	printk("lambda read\n");
 	if (!access_ok(buf, count)) {
 		return 0;
 	}
-	for (i=0; i<count && *f_pos < info->out_size; ++i) {
-		buf[i] = info->srcbuf[(*f_pos)++];
-	}
-	return info->out_size - *f_pos;
+	len = stringify(buf, count, info->json);
+	printk("stringified %d %d %d\n", len, info->json.type, info->tag);
+	if (len < 0) return 0;
+	return 0;
 }
 
 struct file_operations s_lambda_fops = {
@@ -75,3 +80,4 @@ static void lambda_exit(void) {
 
 module_init(lambda_init);
 module_exit(lambda_exit);
+MODULE_LICENSE("GPL");
