@@ -2,6 +2,7 @@
 #include <linux/fs.h>
 #include <linux/uaccess.h>
 #include <linux/slab.h>
+#include "json.h"
 
 #define DRIVER_MEJOR 63
 #define DRIVER_NAME "lambda"

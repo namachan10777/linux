@@ -3,4 +3,4 @@
 #
 
 # Lambda
-obj-$(CONFIG_LAMBDA)			+= lambda.o
+obj-$(CONFIG_LAMBDA)			+= lambda.o json.o eval.o

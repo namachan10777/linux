@@ -1,6 +1,5 @@
 #include "json.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include <linux/slab.h>
 
 struct List {
 	struct JsonValue json;
@@ -29,14 +28,18 @@ int is_digit(char c) {
 }
 
 ParseResult parse_impl(int count, const char *input) {
-	int origin = (int)input;
+	int origin = (long long)input;
+	int is_true = 1;
+	char true_str[] = "true";
+	int is_false = 1;
+	char false_str[] = "false";
 	ParseResult result;
 	while(is_white(*input) || count <= 0) {
 		++input;
 		--count;
 	}
 	if (count == 0) {
-		return gen_error((int)input);
+		return gen_error((long long)input);
 	}
 	if (*input == '\"') {
 		int i;
@@ -46,206 +49,206 @@ ParseResult parse_impl(int count, const char *input) {
 			}
 			else if (input[i] == '\"') {
 				int j;
-				char *buf = (char*)malloc(i);
+				char *buf = (char*)kmalloc(i, GFP_KERNEL);
+				struct JsonValue value;
 				for (j=0; j<i-1; ++j) {
 					buf[j] = input[j+1];
 				}
 				result.type = SUCCESS;
-				struct JsonValue value;
 				value.type = STRING;
 				value.string.buf = buf;
 				value.string.len = (i-1);
 				result.value = value;
-				result.used = (int)input - origin + i + 1;
+				result.used = (long long)input - origin + i + 1;
 				return result;
 			}
 		}
-		return gen_error((int)input);
+		return gen_error((long long)input);
 	}
 	if (*input == '-' || is_digit(*input)) {
 		int sign = 1;
 		int base=0;
-		if (count < 1) return gen_error((int)input);
+		int i=0;
+		struct JsonValue value;
+		if (count < 1) return gen_error((long long)input);
 		if (*input == '-') {
 			sign = -1;
 			input++;
 			count--;
 		}
-		int i=0, j;
 		while (i < count && is_digit(input[i])) {
 			base *= 10;
 			base += input[i++] - '0';
 		}
 		result.type = SUCCESS;
-		struct JsonValue value;
 		value.integer = base * sign;
 		value.type = INTEGER;
 		result.value = value;
-		result.used = i + (int)input - origin;
+		result.used = i + (long long)input - origin;
 		return result;
 	}
 	if (*input == '[') {
+		struct List *list = NULL;
+		struct List *l1 = list;
+		int cnt = 0;
+		int idx = cnt;
+		struct JsonValue *arr;
 		++input; --count;
-		if (count < 0) return gen_error((int)input);
+		if (count < 0) return gen_error((long long)input);
 		while (is_white(*input)) {
-			if (count < 0) return gen_error((int)input);
+			if (count < 0) return gen_error((long long)input);
 			++input; --count;
 		}
-		if (count < 0) return gen_error((int)input);
+		if (count < 0) return gen_error((long long)input);
 		if (*input == ']') {
 			result.type = SUCCESS;
-			result.used = (int)input - (int)origin + 1;
+			result.used = (long long)input - (long long)origin + 1;
 			result.value.type = ARRAY;
 			result.value.arrary.len = 0;
 			result.value.arrary.arr = NULL;
 			return result;
 		}
-		int len = 0;
-		struct List *list = NULL;
 
 		for (;;) {
 			ParseResult result = parse_impl(count, input);
+			struct List *next;
 			if (result.type == ERROR) {
 				result.type = ERROR;
-				result.pos = (int)input;
+				result.pos = (long long)input;
 				return result;
 			}
 			input += result.used;
 			count -= result.used;
-			struct List *next = malloc(sizeof(struct List));
+			next = kmalloc(sizeof(struct List), GFP_KERNEL);
 			next->next = list;
 			next->json = result.value;
 			list = next;
 
-			if (count < 1) return gen_error((int)input);
+			if (count < 1) return gen_error((long long)input);
 			while (is_white(*input)) {
-				if (count <= 1) return gen_error((int)input);
+				if (count <= 1) return gen_error((long long)input);
 				++input; --count;
 			}
 
 			if (*input == ',') {
-				if (count < 1) return gen_error((int)input);
+				if (count < 1) return gen_error((long long)input);
 				++input; --count;
 			}
 			else if (*input == ']') {
-				if (count < 1) return gen_error((int)input);
+				if (count < 1) return gen_error((long long)input);
 				break;
 			}
 		}
-		struct List *l1 = list;
-		int cnt = 0;
 		while(l1 != NULL) {
 			++cnt;
 			l1 = l1->next;
 		}
-		struct JsonValue *arr = malloc(sizeof(struct JsonValue) * cnt);
-		int idx = cnt;
+		arr = kmalloc(sizeof(struct JsonValue) * cnt, GFP_KERNEL);
 		while(list != NULL) {
 			arr[--idx] = list->json;
 			list = list->next;
 		}
 		result.type = SUCCESS;
-		result.used = (int)input - origin + 1;
+		result.used = (long long)input - origin + 1;
 		result.value.type = ARRAY;
 		result.value.arrary.arr = arr;
 		result.value.arrary.len = cnt;
 		return result;
 	}
 	if (*input == '{') {
+		int cnt = 0;
+		struct KeyValueList *l1, *list=NULL;
+		int idx;
+		struct Pair *pairs;
 		++input; --count;
-		if (count <= 0) return gen_error((int)input);
+		if (count <= 0) return gen_error((long long)input);
 		while (is_white(*input)) {
-			if (count < 0) return gen_error((int)input);
+			if (count < 0) return gen_error((long long)input);
 			++input; --count;
 		}
-		if (count <= 0) return gen_error((int)input);
+		if (count <= 0) return gen_error((long long)input);
 		if (*input == '}') {
 			result.type = SUCCESS;
-			result.used = (int)input - (int)origin + 1;
+			result.used = (long long)input - (long long)origin + 1;
 			result.value.type = ARRAY;
 			result.value.arrary.len = 0;
 			result.value.arrary.arr = NULL;
 			return result;
 		}
-		int len = 0;
-		struct KeyValueList *list = NULL;
 
 		for (;;) {
 			ParseResult result = parse_impl(count, input);
+			struct KeyValueList *next;
+			struct String key;
 			if (result.type == ERROR || result.value.type != STRING) {
 				result.type = ERROR;
-				result.pos = (int)input;
+				result.pos = (long long)input;
 				return result;
 			}
-			struct String key = result.value.string;
+			key = result.value.string;
 			input += result.used;
 			count -= result.used;
 			while (is_white(*input)) {
-				if (count < 0) return gen_error((int)input);
+				if (count < 0) return gen_error((long long)input);
 				++input;
 				--count;
 			}
-			if (*input != ':') return gen_error((int)input);
+			if (*input != ':') return gen_error((long long)input);
 			++input;
 			--count;
 			result = parse_impl(count, input);
 			if (result.type == ERROR) {
 				result.type = ERROR;
-				result.pos = (int)input;
+				result.pos = (long long)input;
 				return result;
 			}
 			input += result.used;
 			count -= result.used;
-			struct KeyValueList *next = malloc(sizeof(struct KeyValueList));
+			next = kmalloc(sizeof(struct KeyValueList), GFP_KERNEL);
 			next->next = list;
 			next->json = result.value;
 			next->key = key;
 			list = next;
 
-			if (count < 1) return gen_error((int)input);
+			if (count < 1) return gen_error((long long)input);
 			while (is_white(*input)) {
-				if (count < 1) return gen_error((int)input);
+				if (count < 1) return gen_error((long long)input);
 				++input; --count;
 			}
 
 			if (*input == ',') {
-				if (count < 1) return gen_error((int)input);
+				if (count < 1) return gen_error((long long)input);
 				++input; --count;
 			}
 			else if (*input == '}') {
-				if (count < 1) return gen_error((int)input);
+				if (count < 1) return gen_error((long long)input);
 				break;
 			}
 		}
-		struct KeyValueList *l1 = list;
-		int cnt = 0;
+		l1 = list;
 		while(l1 != NULL) {
 			++cnt;
 			l1 = l1->next;
 		}
-		struct Pair *pairs = malloc(sizeof(struct Pair) * cnt);
-		int idx = cnt;
+		pairs = kmalloc(sizeof(struct Pair) * cnt, GFP_KERNEL);
+		idx = cnt;
 		while(list != NULL) {
 			pairs[--idx] = (struct Pair){ list->key, list->json };
 			list = list->next;
 		}
 		result.type = SUCCESS;
-		result.used = (int)input - origin + 1;
+		result.used = (long long)input - origin + 1;
 		result.value.type = OBJECT;
 		result.value.pairs.pairs = pairs;
 		result.value.arrary.len = cnt;
 		return result;
 	}
-	int is_true = 1;
-	char true_str[] = "true";
 	if (count >= 4) {
 		int i;
 		for (i = 0; i < 4; ++i) {
 			is_true &= true_str[i] == input[i];
 		}
 	}
-	int is_false = 1;
-	char false_str[] = "false";
 	if (count >= 5) {
 		int i;
 		for (i = 0; i < 5; ++i) {
@@ -253,32 +256,33 @@ ParseResult parse_impl(int count, const char *input) {
 		}
 	}
 	if (is_true || is_false) {
-		result.type = SUCCESS;
 		struct JsonValue value;
+		result.type = SUCCESS;
 		value.type = BOOLEAN;
 		value.boolean = is_true;
 		result.value = value;
-		result.used = (int)input - origin + is_true ? 4 : 5;
+		result.used = (long long)input - origin + is_true ? 4 : 5;
 		return result;
 	}
-	return gen_error((int)input);
+	return gen_error((long long)input);
 }
 
 ParseResult parse(const char *input) {
 	int len=0;
+	ParseResult result;
 	while(input[len] != '\0') ++len;
-	ParseResult result = parse_impl(len, input);
+	result = parse_impl(len, input);
 	if (result.type == ERROR) {
-		result.pos -= (int)input;
+		result.pos -= (long long)input;
 	}
 	return result;
 }
 
 int stringify_impl(char *buf, int buf_size, JSONValue json) {
 	if (json.type == STRING) {
+		int i;
 		if (buf_size < json.string.len + 3) return -1;
 		buf[0] = '\"';
-		int i;
 		for (i=0;i<json.string.len;++i) {
 			buf[i+1] = json.string.buf[i];
 		}
@@ -289,11 +293,11 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 		int i=0;
 		int base = 1;
 		int abs = json.integer > 0 ? json.integer : -json.integer;
+		char tmp[1024];
+		int j=0, k;
 		if (i >= buf_size-1) return -1;
 		if (json.integer < 0)
 			buf[i++] = '-';
-		char tmp[1024];
-		int j=0, k;
 		while(abs / base > 0) {
 			tmp[j++] = (abs / base) % 10 + '0';
 			if (j+i >= buf_size) return -1;
@@ -305,12 +309,14 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 		return j+i;
 	}
 	else if (json.type == ARRAY) {
-		if (buf_size < 1) return -1; buf[0] = '[';
 		int offset = 1;
 		int i;
+		if (buf_size < 1) return -1;
+		buf[0] = '[';
 		for (i=0; i<json.arrary.len; ++i) {
+			int s;
 			if (buf_size - offset < 1) return -1;
-			int s = stringify_impl(buf + offset, buf_size-1, json.arrary.arr[i]);
+			s = stringify_impl(buf + offset, buf_size-1, json.arrary.arr[i]);
 			if (s == -1) return -1;
 			offset += s;
 			if (i < json.arrary.len-1) {
@@ -324,12 +330,12 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 		return offset;
 	}
 	else if (json.type == OBJECT ) {
-		if (buf_size < 1) return -1;
-		buf[0] = '{';
 		int offset = 1;
 		int i, j;
+		if (buf_size < 1) return -1;
+		buf[0] = '{';
 		for (i=0; i<json.pairs.len; ++i) {
-			int key_size = json.pairs.pairs[i].key.len + 2;
+			int s;
 			buf[offset] = '"';
 			for (j=0; j<json.pairs.pairs[i].key.len; ++j) {
 				buf[++offset] = json.pairs.pairs[i].key.buf[j];
@@ -338,7 +344,7 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 			buf[++offset] = '"';
 			buf[++offset] = ':';
 			++offset;
-			int s = stringify_impl(buf + offset, buf_size-offset, json.pairs.pairs[i].value);
+			s = stringify_impl(buf + offset, buf_size-offset, json.pairs.pairs[i].value);
 			if (s == -1) return -1;
 			offset += s;
 			if (i < json.arrary.len-1) {
@@ -353,9 +359,9 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 	}
 	else if (json.type == BOOLEAN) {
 		if (json.boolean) {
+			int i;
 			char src[] = "true";
 			if (buf_size < sizeof(src)) return -1;
-			int i;
 			for (i = 0; i < sizeof(src); ++i) {
 				buf[i] = src[i];
 			}
@@ -363,8 +369,8 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 		}
 		else {
 			char src[] = "false";
-			if (buf_size < sizeof(src)) return -1;
 			int i;
+			if (buf_size < sizeof(src)) return -1;
 			for (i = 0; i < sizeof(src); ++i) {
 				buf[i] = src[i];
 			}
