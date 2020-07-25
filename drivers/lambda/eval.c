@@ -288,7 +288,7 @@ struct JsonValue* eval(struct JsonValue* out, struct JsonValue *root) {
 			struct Path path;
 			if (!parse_path(&path, name->string.buf, name->string.len))
 				return NULL;
-			return get_value(root, path.path, path.len);
+			return get_value(out, path.path, path.len);
 		}
 	}
 	return root;

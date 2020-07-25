@@ -125,14 +125,17 @@ int main() {
 	result = parse(src15, sizeof(src15));
 	ASSERT(exec(out, &result.value));
 	stringify(buf, sizeof(buf), *out);
-	printf("%s\n", buf);
 
-	char src16[] = "{\"type\": \"assign\", \"target\": \"out[out.hoge]\", \"value\":\"1\" }";
-	printf("-----------\n");
+	char src16[] = "{\"type\": \"assign\", \"target\": \"out[out.hoge]\", \"value\":1 }";
 	result = parse(src16, sizeof(src16));
 	ASSERT(exec(out, &result.value));
 	stringify(buf, sizeof(buf), *out);
-	printf("%s\n", buf);
+
+	char src17[] = "{\"type\": \"ref\", \"name\": \"out.fuga\"}";
+	result = parse(src17, sizeof(src17));
+	evaluated = eval(out, &result.value);
+	ASSERT(evaluated != NULL);
+	ASSERT(evaluated->type == INTEGER && evaluated->integer == 1);
 
 	/*char src14[1024];
 	int idx=0;
