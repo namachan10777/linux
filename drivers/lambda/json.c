@@ -1,11 +1,6 @@
 #include "json.h"
-#include <stdio.h>
-#ifdef USER_LAND
 #include <linux/slab.h>
 #include <linux/module.h>
-#else
-#include "stub.h"
-#endif
 
 struct List {
 	struct JsonValue json;

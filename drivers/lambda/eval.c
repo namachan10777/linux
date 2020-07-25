@@ -1,9 +1,5 @@
 #include "json.h"
-#ifdef USER_LAND
 #include <linux/module.h>
-#else
-#include "stub.h"
-#endif
 
 #define STRING(name, inner) struct String name = { inner, sizeof(inner)-1};
 
