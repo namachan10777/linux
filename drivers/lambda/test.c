@@ -1,8 +1,9 @@
 #define USER_LAND
 #include "json.h"
-#include "eval.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include "eval.h"
 
 #define ASSERT(cond) if (!(cond)) { printf("assersion failure: %s\n", #cond);  return -1; }
 
@@ -113,4 +114,32 @@ int main() {
 	ASSERT(result.value.pairs.len == 2);
 	ASSERT(stringify(buf, sizeof(buf), result.value) == 33);
 	ASSERT(strcmp(buf, "{\"hoge\":[1,2,3],\"foo\":{\"bar\":1}}") == 0);
+
+	char src14[] = "{\"type\": \"op\", \"op\": \"sub\", \"lhr\": 1, \"rhr\": 2}";
+	result = parse(src14, sizeof(src14));
+	struct JsonValue *out = empty_object();
+	struct JsonValue *evaluated = eval(out, &result.value);
+	ASSERT(evaluated->type = INTEGER && evaluated->integer == -1);
+
+	char src15[] = "{\"type\": \"assign\", \"target\": \"out.hoge\", \"value\":\"fuga\" }";
+	result = parse(src15, sizeof(src15));
+	ASSERT(exec(out, &result.value));
+	stringify(buf, sizeof(buf), *out);
+	printf("%s\n", buf);
+
+	char src16[] = "{\"type\": \"assign\", \"target\": \"out[out.hoge]\", \"value\":\"1\" }";
+	printf("-----------\n");
+	result = parse(src16, sizeof(src16));
+	ASSERT(exec(out, &result.value));
+	stringify(buf, sizeof(buf), *out);
+	printf("%s\n", buf);
+
+	/*char src14[1024];
+	int idx=0;
+	FILE* fp = fopen("1", "r");
+	while ((src14[idx++] = fgetc(fp)) != EOF) {}
+	result = parse(src14, idx);
+	stringify(buf, sizeof(buf), result.value);
+	printf("%s\n", buf);*/
+	return 0;
 }

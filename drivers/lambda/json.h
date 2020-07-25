@@ -24,6 +24,7 @@ typedef struct {
 
 struct Pairs {
 	int len;
+	int mem_len;
 	struct Pair *pairs;
 };
 
@@ -39,7 +40,7 @@ struct JsonValue {
 };
 
 struct Pair {
-	struct String key;
+	char *key;
 	struct JsonValue value;
 };
 

@@ -1,6 +1,7 @@
 #include "json.h"
-#include <linux/slab.h>
-#include <linux/module.h>
+/*#include <linux/slab.h>
+#include <linux/module.h>*/
+#include "stub.h"
 
 struct List {
 	struct JsonValue json;
@@ -9,7 +10,7 @@ struct List {
 
 struct KeyValueList {
 	struct JsonValue json;
-	struct String key;
+	char *key;
 	struct KeyValueList *next;
 };
 
@@ -51,7 +52,8 @@ ParseResult parse_impl(int count, const char *input) {
 				++i;
 			}
 			else if (input[i] == '"') {
-				char *buf = (char*)kmalloc(size, GFP_KERNEL);
+				char *buf = (char*)kmalloc(size+1, GFP_KERNEL);
+				buf[size] = '\0';
 				struct JsonValue value;
 				int j, dest;
 				for (j=1, dest=0;j<i; ++j, ++dest) {
@@ -219,7 +221,7 @@ ParseResult parse_impl(int count, const char *input) {
 			next = kmalloc(sizeof(struct KeyValueList), GFP_KERNEL);
 			next->next = list;
 			next->json = result.value;
-			next->key = key;
+			next->key = key.buf;
 			list = next;
 
 			if (count < 1) return gen_error((long long)input);
@@ -252,7 +254,8 @@ ParseResult parse_impl(int count, const char *input) {
 		result.used = (long long)input - origin + 1;
 		result.value.type = OBJECT;
 		result.value.pairs.pairs = pairs;
-		result.value.arrary.len = cnt;
+		result.value.pairs.len = cnt;
+		result.value.pairs.mem_len = cnt;
 		return result;
 	}
 	if (count >= 4) {
@@ -360,8 +363,8 @@ int stringify_impl(char *buf, int buf_size, JSONValue json) {
 		for (i=0; i<json.pairs.len; ++i) {
 			int s;
 			buf[offset] = '"';
-			for (j=0; j<json.pairs.pairs[i].key.len; ++j) {
-				buf[++offset] = json.pairs.pairs[i].key.buf[j];
+			for (j=0; json.pairs.pairs[i].key[j] != '\0'; ++j) {
+				buf[++offset] = json.pairs.pairs[i].key[j];
 			}
 			if (buf_size - offset < 2) return -1;
 			buf[++offset] = '"';

@@ -2,5 +2,7 @@
 #define __EVAL_H__
 #include "json.h"
 
-int eval(struct JsonValue *out, struct JsonValue json);
+struct JsonValue *eval(struct JsonValue *out, struct JsonValue *json);
+int exec(struct JsonValue* out, struct JsonValue *json);
+struct JsonValue *empty_object();
 #endif

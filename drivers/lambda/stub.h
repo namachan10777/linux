@@ -4,4 +4,5 @@
 #include <stdio.h>
 #define MODULE_LICENSE(hoge)
 #define kmalloc(x, unused) malloc(x)
+#define kfree(x) free(x)
 #endif
