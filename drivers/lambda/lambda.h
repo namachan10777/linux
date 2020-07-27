@@ -1,6 +1,3 @@
-#ifndef __JSON_H__
-#define __JSON_H__
-
 typedef enum {
 	STRING,
 	INTEGER,
@@ -60,4 +57,7 @@ typedef struct {
 
 ParseResult parse(const char *input, int count);
 int stringify(char *buf, int buf_size, JSONValue json);
-#endif
+
+struct JsonValue* eval(struct JsonValue *out, struct JsonValue *json);
+int exec(struct JsonValue* out, struct JsonValue *json);
+struct JsonValue* empty_object(void);
