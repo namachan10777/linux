@@ -1,7 +1,6 @@
 #include "json.h"
-/*#include <linux/slab.h>
-#include <linux/module.h>*/
-#include "stub.h"
+#include <linux/slab.h>
+#include <linux/module.h>
 
 struct List {
 	struct JsonValue json;
@@ -53,8 +52,8 @@ ParseResult parse_impl(int count, const char *input) {
 			}
 			else if (input[i] == '"') {
 				char *buf = (char*)kmalloc(size+1, GFP_KERNEL);
-				buf[size] = '\0';
 				struct JsonValue value;
+				buf[size] = '\0';
 				int j, dest;
 				for (j=1, dest=0;j<i; ++j, ++dest) {
 					if (input[j] == '\\' && input[j+1] == '"') {
@@ -294,8 +293,8 @@ ParseResult parse(const char *input, int count) {
 int stringify_impl(char *buf, int buf_size, JSONValue json) {
 	if (buf_size < 1) return -1;
 	if (json.type == STRING) {
-		buf[0] = '"';
 		int cursor = 1, i;
+		buf[0] = '"';
 		for (i=0; i<json.string.len; ++i) {
 			if (json.string.buf[i] == '"') {
 				if (cursor+2 >= buf_size) return -1;

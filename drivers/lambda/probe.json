@@ -2,28 +2,28 @@
 	"type": "probe",
 	"hooks": [
 		{
-			"target": "sys.syscall.read.begin",
+			"target": "hook.syscall.read.begin",
 			"exec": {
 				"type": "assign",
-				"target": "out[sys.value.syscall.read.caller]",
-				"value": "sys.value.time"
+				"target": "value.out[value.sys.syscall.read.caller]",
+				"value": "value.sys.time"
 			}
 		},
 		{
-			"target": "sys.syscall.read.end",
+			"target": "hook.syscall.read.end",
 			"exec": {
 				"type": "assign",
-				"target": "out[sys.value.syscall.read.caller]",
+				"target": "value.out[value.sys.syscall.read.caller]",
 				"value": {
 					"type": "op",
 					"op": "sub",
 					"lhr": {
 						"type": "ref",
-						"name": "out[sys.value.syscall.read.caller]"
+						"name": "value.out[value.sys.syscall.read.caller]"
 					},
 					"rhr": {
 						"type": "ref",
-						"name": "sys.value.time"
+						"name": "value.sys.time"
 					}
 				}
 			}
