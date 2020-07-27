@@ -593,9 +593,17 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
 	return ret;
 }
 
+void (*read_hooks[2])(void) = {NULL};
+EXPORT_SYMBOL(read_hooks);
 SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 {
-	return ksys_read(fd, buf, count);
+	unsigned long ret;
+	if (read_hooks[0] != NULL)
+		read_hooks[1]();
+	ret = ksys_read(fd, buf, count);
+	if (read_hooks[1] != NULL)
+		read_hooks[1]();
+	return ret;
 }
 
 ssize_t ksys_write(unsigned int fd, const char __user *buf, size_t count)
